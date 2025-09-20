@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>👨‍🏫WRITE "HUMAN"!🖊️</title>
+<link rel="icon" href="favicon_v2.png" type="image/png">
+<style>
+html, body {
+  margin:0; padding:0; height:100%;
+  background:#000 url('2loras_test__01346_.png') center/cover no-repeat;
+  overflow:hidden;
+}
+
+#scroller-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  overflow: hidden;
+}
+
+#scroller {
+  display: flex;
+  flex-wrap: nowrap;
+  will-change: transform;
+}
+
+.note img {
+  height: auto;
+  width: auto;
+  max-height: 80vh;
+  display: block;
+}
+
+.hand-overlay {
+  position: fixed;
+  bottom: 8%;
+  width: 600px;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity .28s, transform .35s;
+  filter: drop-shadow(0 18px 24px rgba(0,0,0,0.35));
+}
+.hand-right { right:0; transform-origin: 100% 10%; }
+.hand-left { left:0; transform-origin: 0% 10%; }
+.hand-overlay.show { opacity:1; transform:translateY(0) scale(1); }
+.hand-overlay.hidden { opacity:0; transform:translateY(18px) scale(.96); }
+.hand-overlay .hand { width:100%; display:block; animation:write-tiny 1.2s ease-in-out infinite; }
+@keyframes write-tiny { 0%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-3px) rotate(-4deg)} 100%{transform:translateY(0) rotate(-5deg)} }
+
+#centerText {
+  color: #ff0000;
+  text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 0 0 6px #ff5555;
+  font-size: 96px;
+  font-weight: bold;
+  cursor: pointer;
+  position: absolute; top:50%; left:50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease;
+}
+#centerText.ready:hover {
+  transform: translate(-50%, -50%) scale(1.05) rotate(-5deg);
+}
+#centerText.shake {
+  animation: angryShake 0.2s infinite;
+}
+
+#humanText {
+  color: #ff00ff;
+  font-size: 120px;
+  font-weight: bold;
+  text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 0 0 8px #ff5555;
+  animation: flashCrazy 0.3s infinite alternate;
+}
+@keyframes flashCrazy { 0% { color: #ff00ff; } 100% { color: #00ff00; } }
+
+#centerText.shake { animation: angryShake 0.2s infinite; }
+@keyframes angryShake { 
+  0% { transform: translate(-50%, -50%) rotate(-3deg); } 
+  25% { transform: translate(-50%, -50%) rotate(3deg); } 
+  50% { transform: translate(-50%, -50%) rotate(-3deg); } 
+  75% { transform: translate(-50%, -50%) rotate(3deg); } 
+  100% { transform: translate(-50%, -50%) rotate(-3deg); } 
+}
+
+#topText {
+  display:none;
+  position:absolute;
+  font-size:48px; font-weight:bold;
+  color:rgba(255, 0, 0, 0.5);
+  pointer-events:none;
+}
+
+#stop {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  color: #fff;
+  font-weight: bold;
+  padding: 12px 18px;
+  font-size: 32px;
+  z-index: 9999;
+  cursor: pointer;
+  transform: rotate(-5deg);
+}
+</style>
+</head>
+<body>
+
+<div id="stop">STOP!</div>
+
+<div id="scroller-wrapper"><div id="scroller"></div></div>
+
+<div id="centerText">
+  WRITE <span id="humanText">HUMAN!</span>
+</div>
+
+<audio id="angry1" src="angry1.mp3"></audio>
+<audio id="angry2" src="angry2.mp3"></audio>
+<div id="topText">WRITE "HUMAN"!</div>
+
+<div id="hand" class="hand-overlay hidden hand-right">
+  <img class="hand" src="./hand1.png" alt="Hand">
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+ const centerText = document.getElementById('centerText');
+centerText.classList.add('shake', 'ready');   const soundEffect = document.getElementById('soundEffect');
+  const textEl = document.getElementById('topText');
+  const scroller = document.getElementById('scroller');
+  const hand = document.getElementById('hand');
+  const stopBtn = document.getElementById('stop');
+
+  const NOTE_COUNT = 59;
+  const NOTE_PATH = './';
+  const NOTE_LIST = Array.from({length:NOTE_COUNT},(_,i)=>`note_${i+1}.png`);
+  const HAND_IMAGES = [
+    {src:'./hand1.png', side:'right'},
+    {src:'./hand2.png', side:'right'},
+    {src:'./hand3.png', side:'left'},
+    {src:'./hand4.png', side:'left'}
+  ];
+
+  let bandX = 0, speed = 1.5;
+  let textX = 100, textY = 50, dx=2, dy=2, angle=0, dAngle=1.5, scale=1, dScale=0.01;
+
+    function renderNotes(){
+    scroller.innerHTML='';
+    for(let j=0;j<2;j++){
+      for(const f of NOTE_LIST){
+        const wrap=document.createElement('div');
+        wrap.className='note';
+        const img=document.createElement('img');
+        img.src=NOTE_PATH+f;
+        wrap.appendChild(img);
+        scroller.appendChild(wrap);
+      }
+    }
+  }
+
+  function autoStep(){
+    bandX -= speed;
+    const firstSetWidth = scroller.scrollWidth/2;
+    if(Math.abs(bandX)>=firstSetWidth) bandX=0;
+    scroller.style.transform = `translateX(${bandX}px)`;
+    requestAnimationFrame(autoStep);
+  }
+
+  function moveText(){
+    textX+=dx; textY+=dy;
+    if(textX<=0 || textX+textEl.offsetWidth>=window.innerWidth) dx=-dx;
+    if(textY<=0 || textY+textEl.offsetHeight>=window.innerHeight) dy=-dy;
+    angle+=dAngle; scale+=dScale;
+    if(scale>1.2 || scale<0.8) dScale=-dScale;
+    textEl.style.left=textX+'px';
+    textEl.style.top=textY+'px';
+    textEl.style.transform=`rotate(${angle}deg) scale(${scale})`;
+    requestAnimationFrame(moveText);
+  }
+
+  function pickHand(){
+    const choice = HAND_IMAGES[Math.floor(Math.random()*HAND_IMAGES.length)];
+    const img = hand.querySelector('.hand');
+    img.src=choice.src;
+    hand.classList.remove('hand-left','hand-right');
+    hand.classList.add(choice.side==='right'?'hand-right':'hand-left');
+  }
+
+  function showHand(){
+    pickHand();
+    hand.classList.remove('hidden'); hand.classList.add('show');
+    setTimeout(()=>{ hand.classList.remove('show'); hand.classList.add('hidden'); },1800);
+  }
+
+  function startAnimation(){
+  centerText.classList.remove('shake', 'ready');
+  centerText.style.display='none';
+
+  const angry1 = document.getElementById('angry1');
+  const angry2 = document.getElementById('angry2');
+  angry1.loop = true;
+  angry2.loop = true;
+  angry1.currentTime = 0;
+  angry2.currentTime = 0;
+  angry1.play();
+  angry2.play();
+
+  renderNotes(); 
+  autoStep();
+  textEl.style.display='block';
+  moveText();
+
+  setInterval(showHand,5000);
+  setTimeout(()=>{ stopBtn.style.display = 'block'; },15000);
+}
+
+    centerText.addEventListener('click', startAnimation);
+
+  stopBtn.addEventListener('click', ()=>{
+    window.location.href = "../voice/voice.html";
+});
+
+});
+</script>
+</body>
+</html>
